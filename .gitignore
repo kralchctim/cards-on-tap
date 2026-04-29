@@ -1,0 +1,17 @@
+# macOS junk
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+
+# Database (VERY IMPORTANT)
+*.db
+
+# Optional: logs / temp
+*.log

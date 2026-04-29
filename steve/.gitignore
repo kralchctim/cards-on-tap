@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+data/default_cards.json
+output/debug/
+output/results/
+.streamlit/
+input/images/
+input/videos/
