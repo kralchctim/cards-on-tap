@@ -55,6 +55,7 @@ def insert_data(cards_json):
     # -----------------------
     for card in tqdm(cards_json):
         oracle_id = card.get("oracle_id")
+        digital = 1 if card.get("digital") else 0
 
         # check if exists
         cursor.execute("SELECT id FROM cards WHERE oracle_id = ?", (oracle_id,))
@@ -78,6 +79,7 @@ def insert_data(cards_json):
                     legalities = ?,
                     keywords = ?,
                     raw_scryfall_json = ?
+                    digital = ?
                 WHERE id = ?
             """, (
                 card.get("name"),
@@ -92,6 +94,7 @@ def insert_data(cards_json):
                 json.dumps(card.get("legalities")),
                 json.dumps(card.get("keywords")),
                 json.dumps(card),
+                digital,
                 card_id
             ))
 
@@ -101,7 +104,7 @@ def insert_data(cards_json):
                 INSERT INTO cards (
                     oracle_id, name, mana_cost, type_line, oracle_text,
                     power, toughness, colours, colour_identity, cmc,
-                    legalities, keywords, raw_scryfall_json
+                    legalities, keywords, raw_scryfall_json, digital
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
@@ -117,7 +120,8 @@ def insert_data(cards_json):
                 card.get("cmc"),
                 json.dumps(card.get("legalities")),
                 json.dumps(card.get("keywords")),
-                json.dumps(card)
+                json.dumps(card),
+                digital
             ))
 
             card_id = cursor.lastrowid

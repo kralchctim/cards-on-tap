@@ -35,7 +35,7 @@ def parse_query(input_string):
 # -----------------------
 # QUERY BUILDER
 # -----------------------
-def build_query(user_input):
+def build_query(user_input, include_arena, include_planes, include_tokens):
     base_query = """
         SELECT c.id, c.name,
                p.image_url
@@ -46,6 +46,27 @@ def build_query(user_input):
     conditions = []
     params = []
     joins = ""
+    # -----------------------
+    # DEFAULT FILTERS
+    # -----------------------
+
+    # Exclude Arena-only cards
+    if not include_arena:
+        conditions.append("""
+            (c.digital IS NULL OR c.digital = 0)
+        """)
+
+    # Exclude Plane cards (Planechase etc.)
+    if not include_planes:
+        conditions.append("""
+            LOWER(c.type_line) NOT LIKE '%plane%'
+        """)
+
+    # Exclude Tokens
+    if not include_tokens:
+        conditions.append("""
+            LOWER(c.type_line) NOT LIKE '%token%'
+        """)
 
     tokens = parse_query(user_input)
 
@@ -101,6 +122,16 @@ def build_query(user_input):
 query_input = st.text_input(
     "Search (type:creature o:\"draw a card\" tag:ramp)"
 )
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    include_arena = st.checkbox("Include Arena cards", value=False)
+
+with col2:
+    include_planes = st.checkbox("Include Plane cards", value=False)
+
+with col3:
+    include_tokens = st.checkbox("Include Tokens", value=False)
 
 if query_input != st.session_state.last_query:
     st.session_state.page = 0
@@ -110,7 +141,13 @@ if query_input != st.session_state.last_query:
 # RESULTS
 # -----------------------
 if query_input:
-    sql, params = build_query(query_input)
+    sql, params = build_query(
+        query_input,
+        include_arena,
+        include_planes,
+        include_tokens
+    )
+    
     df = pd.read_sql_query(sql, conn, params=params)
 
     total_results = len(df)
