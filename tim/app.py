@@ -145,6 +145,24 @@ if query_input:
             st.rerun()
 
     # -----------------------
+    # APPLY SELECT/DESELECT FLAGS
+    # -----------------------
+    if st.session_state.get("select_all_flag"):
+        for _, card in page_df.iterrows():
+            st.session_state[f"select_{card['id']}"] = True
+        st.session_state["select_all_flag"] = False
+
+    if st.session_state.get("deselect_all_flag"):
+        for _, card in page_df.iterrows():
+            st.session_state[f"select_{card['id']}"] = False
+        st.session_state["deselect_all_flag"] = False
+
+    # -----------------------
+    # TRACK SELECTED CARDS
+    # -----------------------
+    selected_ids = []
+
+    # -----------------------
     # GRID DISPLAY
     # -----------------------
     cols_per_row = 6
@@ -156,47 +174,70 @@ if query_input:
         for j, (_, card) in enumerate(row_slice.iterrows()):
             with cols[j]:
 
+                # -----------------------
+                # NEW: CHECKBOX
+                # -----------------------
+                selected = st.checkbox(
+                    "Select",
+                    key=f"select_{card['id']}"
+                )
+
+                if selected:
+                    selected_ids.append(card["id"])
+
                 # IMAGE OR PLACEHOLDER
                 if pd.notna(card["image_url"]):
-                    urls = str(card["image_url"]).split("|")
 
-                    # unique key per card
+                    # 1. clean URLs
+                    urls = [u for u in str(card["image_url"]).split("|") if u]
+
+                    # 2. if nothing valid → treat as no image
+                    if not urls:
+                        urls = []
+
                     flip_key = f"flip_{card['id']}"
 
-                    # initialise state
                     if flip_key not in st.session_state:
                         st.session_state[flip_key] = 0
 
-                    # current face index
                     current_idx = st.session_state[flip_key]
 
-                    # show current image
-                    st.image(urls[current_idx], use_container_width=True)
+                    # 3. clamp index safely
+                    if urls:
+                        current_idx = current_idx % len(urls)
+                        st.session_state[flip_key] = current_idx
 
-                    # if multiple faces → show flip button
-                    if len(urls) > 1:
-                        if st.button("🔄", key=f"btn_{card['id']}"):
-                            st.session_state[flip_key] = (current_idx + 1) % len(urls)
-                            st.rerun()
+                        st.image(urls[current_idx], use_container_width=True)
+
+                        if len(urls) > 1:
+                            if st.button("🔄", key=f"btn_{card['id']}"):
+                                st.session_state[flip_key] = (current_idx + 1) % len(urls)
+                                st.rerun()
+
+                    else:
+                        # fallback if no valid images
+                        st.markdown(f"""
+                            <div style="
+                                height: 260px;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                align-items: center;
+                                border: 1px solid #ddd;
+                                border-radius: 8px;
+                                background-color: #f9f9f9;
+                                text-align: center;
+                                padding: 10px;
+                            ">
+                                <div style="font-weight: 600; color: #666;">{card['name']}</div>
+                                <div style="font-style: italic; color: #666;">No image</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
                 else:
-                    st.markdown(f"""
-                        <div style="
-                            height: 260px;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: center;
-                            align-items: center;
-                            border: 1px solid #ddd;
-                            border-radius: 8px;
-                            background-color: #f9f9f9;
-                            text-align: center;
-                            padding: 10px;
-                        ">
-                            <div style="font-weight: 600; color: #666;">{card['name']}</div>
-                            <div style="font-style: italic; color: #666;">No image</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
+                    # original no-image case
+                    st.markdown(...)
+    
                 # -----------------------
                 # TAGS
                 # -----------------------
@@ -273,5 +314,113 @@ if query_input:
 
         # spacing
         st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
+
+    # -----------------------
+    # NEW: BULK ACTIONS (AFTER GRID)
+    # -----------------------
+    st.markdown("#### Bulk Add Tag")
+
+    col1, col2 = st.columns([4, 1])
+
+    with col1:
+        bulk_tag = st.text_input("Tag to apply", key="bulk_tag")
+
+    with col2:
+        if st.button("Add to Selected"):
+
+            if not selected_ids:
+                st.warning("No cards selected")
+            elif not bulk_tag:
+                st.warning("Enter a tag")
+            else:
+                cursor.execute("SELECT id FROM tags WHERE name = ?", (bulk_tag,))
+                tag_result = cursor.fetchone()
+
+                if tag_result:
+                    tag_id = tag_result[0]
+                else:
+                    cursor.execute(
+                        "INSERT INTO tags (name, category, source) VALUES (?, ?, ?)",
+                        (bulk_tag, "manual", "manual")
+                    )
+                    tag_id = cursor.lastrowid
+
+                for card_id in selected_ids:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO card_tags 
+                        (card_id, tag_id, confidence_score, source, reviewed_status)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (card_id, tag_id, 1.0, "manual", "manual"))
+
+                conn.commit()
+                st.success(f"Tag applied to {len(selected_ids)} cards")
+                st.rerun()
+    # -----------------------
+    # BULK REMOVE TAG
+    # -----------------------
+    st.markdown("#### Bulk Remove Tag")
+    
+    # Get tags that exist on selected cards
+    selected_tags = []
+
+    if selected_ids:
+        placeholder = ",".join(["?"] * len(selected_ids))
+
+        tag_df = pd.read_sql_query(f"""
+            SELECT DISTINCT t.name
+            FROM tags t
+            JOIN card_tags ct ON t.id = ct.tag_id
+            WHERE ct.card_id IN ({placeholder})
+        """, conn, params=selected_ids)
+
+        selected_tags = tag_df["name"].tolist()
+
+    col1, col2 = st.columns([4, 1])
+
+    with col1:
+        tag_to_remove_bulk = st.selectbox(
+            "Select tag to remove",
+            selected_tags,
+            key="bulk_remove_tag"
+        )
+
+    with col2:
+        if st.button("Remove from Selected"):
+
+            if not selected_ids:
+                st.warning("No cards selected")
+            elif not selected_tags:
+                st.warning("No tags available to remove")
+            else:
+                cursor.execute(
+                    "SELECT id FROM tags WHERE name = ?",
+                    (tag_to_remove_bulk,)
+                )
+                tag_result = cursor.fetchone()
+
+                if tag_result:
+                    tag_id = tag_result[0]
+
+                    for card_id in selected_ids:
+                        cursor.execute("""
+                            DELETE FROM card_tags
+                            WHERE card_id = ? AND tag_id = ?
+                        """, (card_id, tag_id))
+
+                    conn.commit()
+                    st.success(f"Removed '{tag_to_remove_bulk}' from {len(selected_ids)} cards")
+                    st.rerun()
+                    
+    # -----------------------
+    # SELECT / DESELECT ALL (CURRENT PAGE)
+    # -----------------------
+
+    if st.button("Select All on Page"):
+        st.session_state["select_all_flag"] = True
+        st.rerun()
+
+    if st.button("Deselect All on Page"):
+        st.session_state["deselect_all_flag"] = True
+        st.rerun()
 
 conn.close()
