@@ -10,6 +10,57 @@ import streamlit as st
 from app.modules.card_name_loader import load_card_names
 from app.ui_scan import scan_image_for_name
 
+st.set_page_config(layout="wide")
+st.markdown(
+    """
+    <style>
+
+    /* Import font */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+    /* Main app background + font */
+    .stApp {
+        background-color: #2B102B;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* ALL text */
+    html, body, [class*="css"]  {
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        border-radius: 12px;
+    }
+
+    /* Text inputs */
+    .stTextInput input {
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* Selectboxes */
+    .stSelectbox div[data-baseweb="select"] {
+        font-family: 'Nunito', sans-serif;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+_banner_path = PROJECT_ROOT / "banner.png"
+_banner_cols = st.columns([1, 1, 1])
+with _banner_cols[1]:
+    if _banner_path.exists():
+        st.image(str(_banner_path), use_container_width=True)
+    else:
+        st.caption("Banner image not found.")
+
+st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+
 st.title("MTG Card Scanner")
 st.write("Testing bench UI")
 
