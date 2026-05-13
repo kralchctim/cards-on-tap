@@ -54,6 +54,9 @@ def insert_data(cards_json):
     # CARDS (UPSERT)
     # -----------------------
     for card in tqdm(cards_json):
+    # Skip memorabilia cards
+    if card.get("set_type") == "memorabilia":
+        continue
         oracle_id = card.get("oracle_id")
         digital = 1 if card.get("digital") else 0
 

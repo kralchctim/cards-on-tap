@@ -320,7 +320,7 @@ if query_input:
                 # -----------------------
                 # VIEW DETAILS BUTTON
                 # -----------------------
-                if st.button("View Details", key=f"details_{card['id']}"):
+                if st.button("View Details (below)", key=f"details_{card['id']}"):
                     st.session_state["selected_card"] = card["id"]
     
                 # -----------------------
