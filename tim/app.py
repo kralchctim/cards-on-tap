@@ -6,7 +6,49 @@ import re
 DB_PATH = "tak.db"
 
 st.set_page_config(layout="wide")
-st.title("Tim the All Knowing 🧠")
+st.markdown("""
+    <style>
+
+    /* Import font */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+
+    /* Main app background + font */
+    .stApp {
+        background-color: #2B102B;
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* ALL text */
+    html, body, [class*="css"]  {
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        border-radius: 12px;
+    }
+
+    /* Text inputs */
+    .stTextInput input {
+        font-family: 'Nunito', sans-serif;
+    }
+
+    /* Selectboxes */
+    .stSelectbox div[data-baseweb="select"] {
+        font-family: 'Nunito', sans-serif;
+    }
+
+    </style>
+""", unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1, 1, 1])
+
+with col2:
+    st.image("banner.png", use_container_width=True)
+
+st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
 # -----------------------
 # PAGINATION CONFIG
@@ -274,6 +316,12 @@ if query_input:
                 else:
                     # original no-image case
                     st.markdown(...)
+
+                # -----------------------
+                # VIEW DETAILS BUTTON
+                # -----------------------
+                if st.button("View Details", key=f"details_{card['id']}"):
+                    st.session_state["selected_card"] = card["id"]
     
                 # -----------------------
                 # TAGS
@@ -299,7 +347,78 @@ if query_input:
                 add_col1, add_col2 = st.columns([4, 1])
 
                 with add_col1:
-                    new_tag = st.text_input("", key=f"add_{card['id']}", label_visibility="collapsed")
+
+                    # Get all existing tags
+                    all_tags_df = pd.read_sql_query("""
+                        SELECT name
+                        FROM tags
+                        ORDER BY name
+                    """, conn)
+
+                    all_tags = all_tags_df["name"].tolist()
+
+                    # Add special option
+                    tag_options = [""] + ["Create New Tag"] + all_tags
+
+                    selected_tag_option = st.selectbox(
+                        "",
+                        tag_options,
+                        key=f"tag_select_{card['id']}",
+                        label_visibility="collapsed"
+                    )
+                    # Show description for existing tags
+                    if (
+                        selected_tag_option != ""
+                        and selected_tag_option != "➕ Create New Tag"
+                    ):
+
+                        tag_desc_df = pd.read_sql_query("""
+                            SELECT description
+                            FROM tags
+                            WHERE name = ?
+                        """, conn, params=(selected_tag_option,))
+
+                        existing_description = None
+
+                        if not tag_desc_df.empty:
+                            existing_description = tag_desc_df.iloc[0]["description"]
+
+                        # Existing description → display it
+                        if existing_description and str(existing_description).strip():
+
+                            st.caption(existing_description)
+
+                            new_tag_description = existing_description
+
+                        # No description → allow user to add one
+                        else:
+
+                            new_tag_description = st.text_area(
+                                "Add description (optional)",
+                                key=f"missing_desc_{card['id']}",
+                                height=80
+                            )
+
+                    else:
+                        new_tag_description = None
+
+                    # If creating new tag → show text box
+                    if selected_tag_option == "Create New Tag":
+
+                        new_tag = st.text_input(
+                            "New tag name",
+                            key=f"new_tag_{card['id']}"
+                        )
+
+                        new_tag_description = st.text_area(
+                            "Tag description (optional)",
+                            key=f"new_tag_desc_{card['id']}",
+                            height=80
+                        )
+
+                    else:
+                        new_tag = selected_tag_option
+                        new_tag_description = None
 
                 with add_col2:
                     if st.button("+", key=f"btn_add_{card['id']}"):
@@ -311,8 +430,21 @@ if query_input:
                                 tag_id = tag_result[0]
                             else:
                                 cursor.execute(
-                                    "INSERT INTO tags (name, category, source) VALUES (?, ?, ?)",
-                                    (new_tag, "manual", "manual")
+                                    """
+                                    INSERT INTO tags (
+                                        name,
+                                        category,
+                                        description,
+                                        source
+                                    )
+                                    VALUES (?, ?, ?, ?)
+                                    """,
+                                    (
+                                        new_tag,
+                                        "manual",
+                                        new_tag_description,
+                                        "manual"
+                                    )
                                 )
                                 tag_id = cursor.lastrowid
 
@@ -349,6 +481,8 @@ if query_input:
                             conn.commit()
                             st.rerun()
 
+    
+        
         # spacing
         st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
 
@@ -357,13 +491,119 @@ if query_input:
     # -----------------------
     st.markdown("#### Bulk Add Tag")
 
+    # -----------------------
+    # LOAD EXISTING TAGS
+    # -----------------------
+    all_tags_df = pd.read_sql_query("""
+        SELECT name
+        FROM tags
+        ORDER BY name
+    """, conn)
+
+    all_tags = all_tags_df["name"].tolist()
+
+    tag_options = ["Create New Tag"] + all_tags
+
     col1, col2 = st.columns([4, 1])
 
     with col1:
-        bulk_tag = st.text_input("Tag to apply", key="bulk_tag")
+
+        selected_bulk_tag_option = st.selectbox(
+            "Select tag",
+            tag_options,
+            key="bulk_tag_select"
+        )
+        # Show description for existing tags
+        if selected_bulk_tag_option != "Create New Tag":
+
+            bulk_tag_desc_df = pd.read_sql_query("""
+                SELECT description
+                FROM tags
+                WHERE name = ?
+            """, conn, params=(selected_bulk_tag_option,))
+
+            if not bulk_tag_desc_df.empty:
+
+                bulk_tag_description_display = bulk_tag_desc_df.iloc[0]["description"]
+
+                if bulk_tag_description_display:
+                    st.caption(bulk_tag_description_display)
+
+        if selected_bulk_tag_option == "Create New Tag":
+
+            bulk_tag = st.text_input(
+                "New tag name",
+                key="bulk_new_tag"
+            )
+
+            bulk_tag_description = st.text_area(
+                "Description (optional)",
+                key="bulk_new_tag_desc",
+                height=80
+            )
+
+        else:
+            bulk_tag = selected_bulk_tag_option
+            bulk_tag_description = None
 
     with col2:
         if st.button("Add to Selected"):
+
+            if not selected_ids:
+                st.warning("No cards selected")
+
+            elif not bulk_tag:
+                st.warning("Enter a tag")
+
+            else:
+                cursor.execute(
+                    "SELECT id FROM tags WHERE name = ?",
+                    (bulk_tag,)
+                )
+
+                tag_result = cursor.fetchone()
+
+                if tag_result:
+                    tag_id = tag_result[0]
+
+                else:
+                    cursor.execute("""
+                        INSERT INTO tags (
+                            name,
+                            category,
+                            description,
+                            source
+                        )
+                        VALUES (?, ?, ?, ?)
+                    """, (
+                        bulk_tag,
+                        "manual",
+                        bulk_tag_description,
+                        "manual"
+                    ))
+
+                    tag_id = cursor.lastrowid
+
+                for card_id in selected_ids:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO card_tags 
+                        (card_id, tag_id, confidence_score, source, reviewed_status)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (
+                        card_id,
+                        tag_id,
+                        1.0,
+                        "manual",
+                        "manual"
+                    ))
+
+                conn.commit()
+
+                st.success(
+                    f"Tag applied to {len(selected_ids)} cards"
+                )
+
+                st.rerun()
 
             if not selected_ids:
                 st.warning("No cards selected")
@@ -459,5 +699,58 @@ if query_input:
     if st.button("Deselect All on Page"):
         st.session_state["deselect_all_flag"] = True
         st.rerun()
+
+# -----------------------
+# CARD DETAILS PANEL
+# -----------------------
+selected_card_id = st.session_state.get("selected_card")
+
+if selected_card_id:
+
+    detail_df = pd.read_sql_query("""
+        SELECT *
+        FROM cards
+        WHERE id = ?
+    """, conn, params=(selected_card_id,))
+
+    if not detail_df.empty:
+
+        card_data = detail_df.iloc[0]
+
+        st.markdown("---")
+        st.header(card_data["name"])
+
+        with st.expander("Card Details", expanded=True):
+
+            st.write("**Mana Cost:**", card_data["mana_cost"])
+            st.write("**Type:**", card_data["type_line"])
+            st.write("**Oracle Text:**", card_data["oracle_text"])
+            st.write("**CMC:**", card_data["cmc"])
+            st.write("**Colours:**", card_data["colours"])
+            st.write("**Colour Identity:**", card_data["colour_identity"])
+            st.write("**Power:**", card_data["power"])
+            st.write("**Toughness:**", card_data["toughness"])
+            st.write("**Keywords:**", card_data["keywords"])
+
+            # -----------------------
+            # TAGS
+            # -----------------------
+            tag_df = pd.read_sql_query("""
+                SELECT t.name
+                FROM tags t
+                JOIN card_tags ct ON t.id = ct.tag_id
+                WHERE ct.card_id = ?
+            """, conn, params=(selected_card_id,))
+
+            tags = tag_df["name"].tolist()
+
+            st.write("**Tags:**", ", ".join(tags) if tags else "None")
+
+            # -----------------------
+            # RAW JSON
+            # -----------------------
+            with st.expander("Raw Scryfall JSON"):
+
+                st.json(card_data["raw_scryfall_json"])
 
 conn.close()
