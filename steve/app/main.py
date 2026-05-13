@@ -1,3 +1,11 @@
+from pathlib import Path
+import sys
+
+# Allow running `python steve/app/main.py` (or via debugpy) by ensuring the
+# `steve/` directory is on `sys.path`, so `import app.*` resolves to `steve/app`.
+if __package__ is None or __package__ == "":
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from app.modules.bottom_strip_parser import parse_bottom_strip_text
 
 from app.modules.image_utils import (

@@ -1,117 +1,149 @@
-import requests
+import sqlite3
+from pathlib import Path
 
-
-SCRYFALL_SEARCH_URL = "https://api.scryfall.com/cards/search"
-
-
-def run_search(query: str) -> list[dict]:
+def _resolve_reference_db_path() -> str:
     """
-    Run a raw Scryfall search query and return card results.
-    If Scryfall returns no cards, return an empty list.
+    Resolve the reference database path.
+
+    `tim/` is the source of truth for `tak.db`; `steve/` should always read
+    from that file regardless of the current working directory.
     """
-    params = {"q": query}
-    response = requests.get(SCRYFALL_SEARCH_URL, params=params, timeout=30)
+    this_file = Path(__file__).resolve()
+    for parent in this_file.parents:
+        candidate = parent / "tim" / "tak.db"
+        if candidate.is_file():
+            return str(candidate)
 
-    if response.status_code == 404:
-        return []
-
-    response.raise_for_status()
-    data = response.json()
-
-    return data.get("data", [])
+    # If we get here, the repo layout isn't what we expect.
+    raise FileNotFoundError(
+        "Could not locate the reference database at 'tim/tak.db' "
+        f"(searched relative to: {this_file})."
+    )
 
 
-def search_cards(card_name: str, extra_query: str = "") -> list[dict]:
+DB_PATH = _resolve_reference_db_path()
+
+
+def _row_to_card(row: tuple) -> dict:
     """
-    Search Scryfall for a card name, with optional extra filter text.
+    Convert a (cards, printings) joined row into the dict shape that
+    the rest of the app expects (matching former Scryfall fields).
+    """
+    (
+        name,
+        set_code,
+        collector_number,
+        mana_cost,
+        type_line,
+        oracle_text,
+    ) = row
+
+    # `get_best_card()` uses a LEFT JOIN, so printing columns can be NULL.
+    # Normalize NULLs to empty strings so downstream string formatting stays safe.
+    def nz(value) -> str:
+        return "" if value is None else str(value)
+
+    return {
+        "name": nz(name),
+        "set": nz(set_code),
+        "collector_number": nz(collector_number),
+        "mana_cost": nz(mana_cost),
+        "type_line": nz(type_line),
+        "oracle_text": nz(oracle_text),
+    }
+
+
+def get_best_card(card_name: str, extra_query: str = "") -> dict | None:
+    """
+    Look up a card in tak.db by name and return a single "best" printing.
 
     Strategy:
-    1. Try exact name match first
-    2. If that fails, try a looser search
+    - Match card name case-insensitively in the cards table
+    - Prefer the most recently released printing (released_at DESC)
     """
     card_name = card_name.strip()
-    extra_query = extra_query.strip()
 
     if not card_name:
-        raise ValueError("card_name cannot be empty.")
+        return None
 
-    exact_query = f'!"{card_name}"'
-    if extra_query:
-        exact_query = f"{exact_query} {extra_query}"
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
-    exact_results = run_search(exact_query)
-    if exact_results:
-        return exact_results
+    cursor.execute(
+        """
+        SELECT
+            c.name,
+            p.set_code,
+            p.collector_number,
+            c.mana_cost,
+            c.type_line,
+            c.oracle_text
+        FROM cards c
+        LEFT JOIN printings p ON p.card_id = c.id
+        WHERE LOWER(c.name) = LOWER(?)
+        ORDER BY p.released_at DESC
+        LIMIT 1
+        """,
+        (card_name,),
+    )
 
-    loose_query = card_name
-    if extra_query:
-        loose_query = f"{loose_query} {extra_query}"
+    row = cursor.fetchone()
+    conn.close()
 
-    return run_search(loose_query)
+    if not row:
+        return None
+
+    return _row_to_card(row)
 
 
 def search_cards_by_filter(filter_query: str) -> list[dict]:
     """
-    Search Scryfall using filter text only, fetching all pages.
+    Approximate the old Scryfall `search_cards_by_filter` using tak.db.
+
+    For now this treats `filter_query` as free text and matches it against
+    card name or oracle_text (case-insensitive). It returns a list of
+    card-like dicts (only the `name` field is relied on by callers).
     """
     filter_query = filter_query.strip()
 
     if not filter_query:
         return []
 
-    all_cards = []
-    next_url = SCRYFALL_SEARCH_URL
-    params = {"q": filter_query}
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
-    while next_url:
-        response = requests.get(next_url, params=params, timeout=30)
+    like = f"%{filter_query}%"
 
-        if response.status_code == 404:
-            return []
+    cursor.execute(
+        """
+        SELECT DISTINCT c.name
+        FROM cards c
+        WHERE LOWER(c.name) LIKE LOWER(?)
+           OR LOWER(c.oracle_text) LIKE LOWER(?)
+        """,
+        (like, like),
+    )
 
-        response.raise_for_status()
-        data = response.json()
+    rows = cursor.fetchall()
+    conn.close()
 
-        all_cards.extend(data.get("data", []))
-
-        if data.get("has_more") and data.get("next_page"):
-            next_url = data["next_page"]
-            params = None  # next_page already includes the query
-        else:
-            next_url = None
-
-    return all_cards
-
-
-def get_best_card(card_name: str, extra_query: str = "") -> dict | None:
-    """
-    Return the first result from Scryfall, or None if nothing is found.
-    """
-    try:
-        cards = search_cards(card_name, extra_query)
-    except Exception:
-        return None
-
-    if not cards:
-        return None
-
-    return cards[0]
+    return [{"name": row[0]} for row in rows if row and row[0]]
 
 
 def print_card_summary(card: dict) -> None:
     """
-    Print a friendly summary of a Scryfall card result.
+    Print a friendly summary of a card dict coming from tak.db.
     """
     if not card:
         print("\nNo card found.")
         return
 
     name = card.get("name", "Unknown")
-    set_code = card.get("set", "").upper()
-    collector_number = card.get("collector_number", "")
-    mana_cost = card.get("mana_cost", "")
-    type_line = card.get("type_line", "")
-    oracle_text = card.get("oracle_text", "")
+    set_code = (card.get("set") or "").upper()
+    collector_number = card.get("collector_number", "") or ""
+    mana_cost = card.get("mana_cost", "") or ""
+    type_line = card.get("type_line", "") or ""
+    oracle_text = card.get("oracle_text", "") or ""
 
     print("\n=== Best Match ===")
     print(f"Name: {name}")
@@ -123,7 +155,7 @@ def print_card_summary(card: dict) -> None:
 
 def get_card_by_set_and_number(set_code: str, collector_number: str) -> dict | None:
     """
-    Fetch a specific printing from Scryfall by set code and collector number.
+    Fetch a specific printing from tak.db by set code and collector number.
     """
     set_code = set_code.strip().lower()
     collector_number = collector_number.strip()
@@ -131,12 +163,32 @@ def get_card_by_set_and_number(set_code: str, collector_number: str) -> dict | N
     if not set_code or not collector_number:
         return None
 
-    url = f"https://api.scryfall.com/cards/{set_code}/{collector_number}"
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
-    response = requests.get(url, timeout=30)
+    cursor.execute(
+        """
+        SELECT
+            c.name,
+            p.set_code,
+            p.collector_number,
+            c.mana_cost,
+            c.type_line,
+            c.oracle_text
+        FROM printings p
+        JOIN cards c ON c.id = p.card_id
+        WHERE LOWER(p.set_code) = LOWER(?)
+          AND p.collector_number = ?
+        ORDER BY p.released_at DESC
+        LIMIT 1
+        """,
+        (set_code, collector_number),
+    )
 
-    if response.status_code == 404:
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
         return None
 
-    response.raise_for_status()
-    return response.json()
+    return _row_to_card(row)
