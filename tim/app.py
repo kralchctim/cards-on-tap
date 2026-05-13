@@ -369,7 +369,7 @@ if query_input:
                     # Show description for existing tags
                     if (
                         selected_tag_option != ""
-                        and selected_tag_option != "➕ Create New Tag"
+                        and selected_tag_option != "Create New Tag"
                     ):
 
                         tag_desc_df = pd.read_sql_query("""
@@ -418,7 +418,7 @@ if query_input:
 
                     else:
                         new_tag = selected_tag_option
-                        new_tag_description = None
+                        # Keep description entered for existing tags (if any).
 
                 with add_col2:
                     if st.button("+", key=f"btn_add_{card['id']}"):
@@ -428,6 +428,16 @@ if query_input:
 
                             if tag_result:
                                 tag_id = tag_result[0]
+                                if new_tag_description and str(new_tag_description).strip():
+                                    cursor.execute(
+                                        """
+                                        UPDATE tags
+                                        SET description = ?
+                                        WHERE id = ?
+                                        AND (description IS NULL OR TRIM(description) = '')
+                                        """,
+                                        (new_tag_description.strip(), tag_id)
+                                    )
                             else:
                                 cursor.execute(
                                     """
