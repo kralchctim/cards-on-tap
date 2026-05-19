@@ -1,7 +1,8 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-import re
+
+from search import build_search_query
 
 DB_PATH = "tak.db"
 
@@ -68,101 +69,10 @@ conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
 # -----------------------
-# QUERY PARSER
-# -----------------------
-def parse_query(input_string):
-    pattern = r'(\w+:"[^"]+"|\w+:[^\s]+|"[^"]+"|\S+)'
-    return re.findall(pattern, input_string)
-
-# -----------------------
-# QUERY BUILDER
-# -----------------------
-def build_query(user_input, include_arena, include_planes, include_tokens):
-    base_query = """
-        SELECT c.id, c.name,
-               p.image_url
-        FROM cards c
-        LEFT JOIN printings p ON p.card_id = c.id
-    """
-
-    conditions = []
-    params = []
-    joins = ""
-    # -----------------------
-    # DEFAULT FILTERS
-    # -----------------------
-
-    # Exclude Arena-only cards
-    if not include_arena:
-        conditions.append("""
-            (c.digital IS NULL OR c.digital = 0)
-        """)
-
-    # Exclude Plane cards (Planechase etc.)
-    if not include_planes:
-        conditions.append("""
-            LOWER(c.type_line) NOT LIKE '%plane%'
-        """)
-
-    # Exclude Tokens
-    if not include_tokens:
-        conditions.append("""
-            LOWER(c.type_line) NOT LIKE '%token%'
-        """)
-
-    tokens = parse_query(user_input)
-
-    for token in tokens:
-        if ":" in token:
-            key, value = token.split(":", 1)
-            value = value.strip('"')
-
-            if key in ["name"]:
-                conditions.append("LOWER(c.name) LIKE LOWER(?)")
-                params.append(f"%{value}%")
-
-            elif key in ["o", "oracle"]:
-                conditions.append("LOWER(c.oracle_text) LIKE LOWER(?)")
-                params.append(f"%{value}%")
-
-            elif key in ["type"]:
-                conditions.append("LOWER(c.type_line) LIKE LOWER(?)")
-                params.append(f"%{value}%")
-
-            elif key in ["tag"]:
-                joins = """
-                    JOIN card_tags ct ON ct.card_id = c.id
-                    JOIN tags t ON t.id = ct.tag_id
-                """
-                conditions.append("LOWER(t.name) = LOWER(?)")
-                params.append(value)
-
-        elif token.startswith('"') and token.endswith('"'):
-            value = token.strip('"')
-            conditions.append("""
-                (LOWER(c.name) LIKE LOWER(?) OR LOWER(c.oracle_text) LIKE LOWER(?))
-            """)
-            params.append(f"%{value}%")
-            params.append(f"%{value}%")
-
-        else:
-            conditions.append("LOWER(c.name) LIKE LOWER(?)")
-            params.append(f"%{token}%")
-
-    full_query = base_query + " " + joins
-
-    if conditions:
-        full_query += " WHERE " + " AND ".join(conditions)
-
-    full_query += " GROUP BY c.id"
-
-    return full_query, params
-
-# -----------------------
 # SEARCH INPUT
 # -----------------------
 query_input = st.text_input(
-    "Search (type:creature o:\"draw a card\" tag:ramp)"
+    "Search (Scryfall syntax: t:creature o:\"draw a card\" tag:ramp f:commander c:rg)"
 )
 col1, col2, col3 = st.columns(3)
 
@@ -183,13 +93,16 @@ if query_input != st.session_state.last_query:
 # RESULTS
 # -----------------------
 if query_input:
-    sql, params = build_query(
+    sql, params, warnings = build_search_query(
         query_input,
         include_arena,
         include_planes,
-        include_tokens
+        include_tokens,
     )
-    
+
+    for warning in warnings:
+        st.warning(warning)
+
     df = pd.read_sql_query(sql, conn, params=params)
 
     total_results = len(df)
