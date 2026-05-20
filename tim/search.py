@@ -831,18 +831,17 @@ def _node_to_sql(node: AstNode) -> tuple[Optional[str], list, list]:
 
 def build_search_query(
     user_input: str,
-    include_arena: bool  = False,
-    include_planes: bool = False,
-    include_tokens: bool = False,
+    include_extras: bool = False,
 ) -> tuple[str, list, list]:
     """
     Build a complete SQL SELECT from a Scryfall-style search string.
 
     Args:
-        user_input:     The raw search string typed by the user.
-        include_arena:  If False, exclude digital-only cards.
-        include_planes: If False, exclude Plane cards (Planechase etc.).
-        include_tokens: If False, exclude Token cards.
+        user_input:    The raw search string typed by the user.
+        include_extras: If False, apply Scryfall-style default exclusions
+            (Vanguard, Plane but not Planeswalker, Scheme, Phenomenon, Token,
+            Emblem, and cards from memorabilia sets — set_type is read from
+            c.raw_scryfall_json because printings has no set_type column).
 
     Returns:
         (sql, params, warnings)
@@ -860,13 +859,20 @@ def build_search_query(
     params:     list      = []
     warnings:   list[str] = []
 
-    # ── Default filters ───────────────────────────────────────
-    if not include_arena:
-        conditions.append('(c.digital IS NULL OR c.digital = 0)')
-    if not include_planes:
-        conditions.append("LOWER(c.type_line) NOT LIKE '%plane%'")
-    if not include_tokens:
-        conditions.append("LOWER(c.type_line) NOT LIKE '%token%'")
+    # ── Scryfall default filters (when not including extras) ──
+    if not include_extras:
+        conditions.extend(
+            [
+                "LOWER(c.type_line) NOT LIKE '%vanguard%'",
+                "NOT (LOWER(c.type_line) LIKE '%plane%' AND LOWER(c.type_line) NOT LIKE '%planeswalker%')",
+                "LOWER(c.type_line) NOT LIKE '%scheme%'",
+                "LOWER(c.type_line) NOT LIKE '%phenomenon%'",
+                "LOWER(c.type_line) NOT LIKE '%token%'",
+                "LOWER(c.type_line) NOT LIKE '%emblem%'",
+                # tak.db has no set_type on printings/cards; Scryfall card JSON includes set_type
+                "NOT (LOWER(IFNULL(json_extract(c.raw_scryfall_json, '$.set_type'), '')) = 'memorabilia')",
+            ]
+        )
 
     # ── User query ────────────────────────────────────────────
     if user_input and user_input.strip():

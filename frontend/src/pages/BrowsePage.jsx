@@ -10,9 +10,7 @@ const PAGE_SIZE = 60
 export default function BrowsePage() {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [includeArena, setIncludeArena] = useState(false)
-  const [includePlanes, setIncludePlanes] = useState(false)
-  const [includeTokens, setIncludeTokens] = useState(false)
+  const [includeExtras, setIncludeExtras] = useState(false)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -40,9 +38,7 @@ export default function BrowsePage() {
       try {
         const params = new URLSearchParams({
           q: debouncedQuery,
-          include_arena: String(includeArena),
-          include_planes: String(includePlanes),
-          include_tokens: String(includeTokens),
+          include_extras: String(includeExtras),
           page: String(page),
           page_size: String(PAGE_SIZE),
         })
@@ -69,7 +65,7 @@ export default function BrowsePage() {
     return () => {
       cancelled = true
     }
-  }, [debouncedQuery, includeArena, includePlanes, includeTokens, page])
+  }, [debouncedQuery, includeExtras, page])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const isLastPage = page >= totalPages - 1
@@ -144,29 +140,11 @@ export default function BrowsePage() {
           <label className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"
-              checked={includeArena}
-              onChange={handleFilterChange(setIncludeArena)}
+              checked={includeExtras}
+              onChange={handleFilterChange(setIncludeExtras)}
               className="size-4 rounded border-purple-600 bg-[#1a081a] text-purple-500 focus:ring-purple-400"
             />
-            Include Arena cards
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={includePlanes}
-              onChange={handleFilterChange(setIncludePlanes)}
-              className="size-4 rounded border-purple-600 bg-[#1a081a] text-purple-500 focus:ring-purple-400"
-            />
-            Include Plane cards
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={includeTokens}
-              onChange={handleFilterChange(setIncludeTokens)}
-              className="size-4 rounded border-purple-600 bg-[#1a081a] text-purple-500 focus:ring-purple-400"
-            />
-            Include Tokens
+            Include extras
           </label>
         </div>
 

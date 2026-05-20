@@ -74,16 +74,11 @@ cursor = conn.cursor()
 query_input = st.text_input(
     "Search (Scryfall syntax: t:creature o:\"draw a card\" tag:ramp f:commander c:rg)"
 )
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    include_arena = st.checkbox("Include Arena cards", value=False)
-
-with col2:
-    include_planes = st.checkbox("Include Plane cards", value=False)
-
-with col3:
-    include_tokens = st.checkbox("Include Tokens", value=False)
+include_extras = st.checkbox(
+    "Include extras",
+    value=False,
+    help="Vanguard, Plane, Scheme, Phenomenon, Tokens, Emblems, memorabilia sets",
+)
 
 if query_input != st.session_state.last_query:
     st.session_state.page = 0
@@ -95,9 +90,7 @@ if query_input != st.session_state.last_query:
 if query_input:
     sql, params, warnings = build_search_query(
         query_input,
-        include_arena,
-        include_planes,
-        include_tokens,
+        include_extras=include_extras,
     )
 
     for warning in warnings:

@@ -58,9 +58,10 @@ def health():
 @app.get("/cards/search")
 def search_cards(
     q:               str  = Query(default="", description="Scryfall-style search query"),
-    include_arena:   bool = Query(default=False),
-    include_planes:  bool = Query(default=False),
-    include_tokens:  bool = Query(default=False),
+    include_extras:  bool = Query(
+        default=False,
+        description="Include extras (Vanguard, Plane, Scheme, Phenomenon, Tokens, Emblems, Memorabilia sets)",
+    ),
     page:            int  = Query(default=0, ge=0),
     page_size:       int  = Query(default=60, ge=1, le=200),
 ):
@@ -68,9 +69,7 @@ def search_cards(
     Search cards using Scryfall-style syntax.
     Returns a paginated list of cards with their best printing image.
     """
-    sql, params, warnings = build_search_query(
-        q, include_arena, include_planes, include_tokens
-    )
+    sql, params, warnings = build_search_query(q, include_extras=include_extras)
 
     conn = get_db()
     try:
