@@ -1,12 +1,16 @@
 """
-main.py — TAK FastAPI backend
+main.py — TAK API backend
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import sqlite3
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Body, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from search import build_search_query
+from auth import get_current_user
 
 DB_PATH = "tak.db"
 
@@ -191,8 +195,6 @@ def get_tag_cards(tag_id: int):
 # ─────────────────────────────────────────────────────────────
 # TAG MUTATIONS
 # ─────────────────────────────────────────────────────────────
-
-from fastapi import Body
 
 @app.post("/cards/{card_id}/tags")
 def add_tag_to_card(

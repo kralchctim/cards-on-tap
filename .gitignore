@@ -13,5 +13,9 @@ __pycache__/
 # Database (VERY IMPORTANT)
 *.db
 
-# Optional: logs / temp
+# Logs / temp
 *.log
+
+# Environment files (VERY IMPORTANT)
+.env
+**/.env
