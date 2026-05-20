@@ -11,6 +11,7 @@ export default function BrowsePage() {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [includeExtras, setIncludeExtras] = useState(false)
+  const [includeArena, setIncludeArena] = useState(false)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -39,6 +40,7 @@ export default function BrowsePage() {
         const params = new URLSearchParams({
           q: debouncedQuery,
           include_extras: String(includeExtras),
+          include_arena: String(includeArena),
           page: String(page),
           page_size: String(PAGE_SIZE),
         })
@@ -65,7 +67,7 @@ export default function BrowsePage() {
     return () => {
       cancelled = true
     }
-  }, [debouncedQuery, includeExtras, page])
+  }, [debouncedQuery, includeExtras, includeArena, page])
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const isLastPage = page >= totalPages - 1
@@ -135,9 +137,13 @@ export default function BrowsePage() {
             </button>
           )}
         </div>
-
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="min-w-0 text-xs text-purple-300/50">
+            <a href="/search-guide.html" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-purple-200 transition-colors">
+              Search tips — Ask Tim anything →
+            </a>
+          </p>
+          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={includeExtras}
@@ -145,6 +151,15 @@ export default function BrowsePage() {
               className="size-4 rounded border-purple-600 bg-[#1a081a] text-purple-500 focus:ring-purple-400"
             />
             Include extras
+          </label>
+          <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={includeArena}
+              onChange={handleFilterChange(setIncludeArena)}
+              className="size-4 rounded border-purple-600 bg-[#1a081a] text-purple-500 focus:ring-purple-400"
+            />
+            Include MTG Arena cards
           </label>
         </div>
 

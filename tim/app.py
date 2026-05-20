@@ -79,6 +79,11 @@ include_extras = st.checkbox(
     value=False,
     help="Vanguard, Plane, Scheme, Phenomenon, Tokens, Emblems, memorabilia sets",
 )
+include_arena = st.checkbox(
+    "Include MTG Arena cards",
+    value=False,
+    help="Digital-only / Arena cards",
+)
 
 if query_input != st.session_state.last_query:
     st.session_state.page = 0
@@ -91,6 +96,7 @@ if query_input:
     sql, params, warnings = build_search_query(
         query_input,
         include_extras=include_extras,
+        include_arena=include_arena,
     )
 
     for warning in warnings:

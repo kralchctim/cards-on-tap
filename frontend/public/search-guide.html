@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tim's Search Guide — Cards On Tap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #2B102B;
+    --surface:     #3d1a3d;
+    --surface2:    #4e225e;
+    --border:      #6b3a7d;
+    --gold:        #F5C842;
+    --gold-dark:   #c49a1e;
+    --gold-glow:   rgba(245,200,66,0.15);
+    --gold-glow2:  rgba(245,200,66,0.06);
+    --blue:        #4aaee8;
+    --blue-glow:   rgba(74,174,232,0.15);
+    --text:        #f0e8ff;
+    --text-muted:  #b89fcc;
+    --text-dim:    #7a5f8a;
+    --red:         #e05a3a;
+    --green:       #3aad6a;
+    --white-mana:  #f5f0e0;
+    --code-bg:     #1e0a1e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(ellipse 70% 40% at 50% 0%, rgba(74,174,232,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 10% 100%, rgba(245,200,66,0.06) 0%, transparent 60%);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Sparkle decoration ── */
+  .sparkle {
+    display: inline-block;
+    color: var(--gold);
+    animation: sparkle-pop 2s ease-in-out infinite;
+  }
+  .sparkle:nth-child(2) { animation-delay: 0.4s; }
+  .sparkle:nth-child(3) { animation-delay: 0.8s; }
+  @keyframes sparkle-pop {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+
+  /* ── Layout ── */
+  .page { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* ── Hero ── */
+  .hero {
+    text-align: center;
+    padding: 52px 20px 40px;
+    position: relative;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold-glow);
+    border: 2px solid var(--gold-dark);
+    border-radius: 50px;
+    padding: 6px 18px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 6vw, 52px);
+    font-weight: 900;
+    color: var(--gold);
+    text-shadow:
+      0 0 30px rgba(245,200,66,0.5),
+      0 2px 0 var(--gold-dark),
+      0 4px 0 rgba(0,0,0,0.4);
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+
+  .hero-sub {
+    margin-top: 14px;
+    font-size: 17px;
+    color: var(--text-muted);
+    font-weight: 600;
+    max-width: 520px;
+    margin-inline: auto;
+  }
+
+  .tim-bubble {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 16px 20px;
+    margin-top: 28px;
+    max-width: 480px;
+    text-align: left;
+    position: relative;
+  }
+  .tim-bubble::before {
+    content: '';
+    position: absolute;
+    top: -10px; left: 28px;
+    width: 16px; height: 16px;
+    background: var(--surface);
+    border-left: 2px solid var(--border);
+    border-top: 2px solid var(--border);
+    transform: rotate(45deg);
+  }
+  .tim-avatar {
+    font-size: 36px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(74,174,232,0.5));
+  }
+  .tim-text {
+    font-size: 14.5px;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  .tim-text strong { color: var(--gold); }
+
+  .divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-dark), var(--blue), var(--gold-dark), transparent);
+    border: none;
+    margin: 40px 0;
+    opacity: 0.6;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 24px 28px;
+    margin-bottom: 12px;
+  }
+  .toc-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+  .toc-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .toc-links a {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 50px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.18s;
+  }
+  .toc-links a:hover {
+    background: var(--gold-glow);
+    border-color: var(--gold-dark);
+    color: var(--gold);
+    transform: translateY(-1px);
+  }
+
+  /* ── Sections ── */
+  section { margin-top: 52px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .section-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--surface2), var(--surface));
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: -0.01em;
+  }
+
+  p { margin-bottom: 12px; font-weight: 600; color: var(--text-muted); }
+  p strong { color: var(--text); }
+
+  /* ── Code ── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  .example-block {
+    background: var(--code-bg);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin: 16px 0;
+    overflow-x: auto;
+  }
+
+  .ex-row {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .ex-row:last-child { margin-bottom: 0; }
+  .ex-q {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--gold);
+    flex-shrink: 0;
+    background: rgba(245,200,66,0.08);
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(245,200,66,0.2);
+  }
+  .ex-c {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    font-weight: 700;
+  }
+
+  /* ── Tables ── */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    margin: 16px 0;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface2); }
+  th {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 12px 16px;
+    text-align: left;
+  }
+  td {
+    padding: 11px 16px;
+    border-top: 1px solid rgba(107,58,125,0.4);
+    vertical-align: top;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  tbody tr { background: var(--surface); transition: background 0.15s; }
+  tbody tr:hover { background: var(--surface2); }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .callout-icon { font-size: 18px; flex-shrink: 0; }
+  .callout.tip  { background: rgba(58,173,106,0.1); border: 2px solid rgba(58,173,106,0.3); color: #7ee8a2; }
+  .callout.info { background: var(--gold-glow2); border: 2px solid rgba(245,200,66,0.25); color: #e8d07e; }
+  .callout.warn { background: rgba(224,90,58,0.1); border: 2px solid rgba(224,90,58,0.3); color: #e8957e; }
+
+  /* ── Pill tags ── */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--gold);
+    background: var(--gold-glow);
+    border: 1.5px solid rgba(245,200,66,0.3);
+    border-radius: 50px;
+    padding: 4px 12px;
+  }
+
+  /* ── Colour grid ── */
+  .colour-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .colour-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .colour-card:hover { border-color: var(--gold-dark); transform: translateY(-2px); }
+  .colour-card .clabel {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .colour-card code {
+    display: inline-block;
+    margin: 2px 2px;
+    font-size: 11px;
+  }
+
+  /* ── Mana pips ── */
+  .pip-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+  .pip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 900;
+    font-family: 'Nunito', sans-serif;
+    border: 2px solid rgba(255,255,255,0.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .pip-w { background: #f0ece0; color: #5a4a2a; }
+  .pip-u { background: #3b7ac9; color: #fff; }
+  .pip-b { background: #7850a0; color: #fff; }
+  .pip-r { background: #d04028; color: #fff; }
+  .pip-g { background: #2a9050; color: #fff; }
+  .pip-c { background: #9a9a9a; color: #fff; }
+
+  /* ── Op grid ── */
+  .op-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin: 16px 0; }
+  .op-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    transition: border-color 0.2s;
+  }
+  .op-card:hover { border-color: var(--blue); }
+  .op-card code { font-size: 15px; display: block; margin-bottom: 8px; }
+  .op-card .desc { font-size: 13px; color: var(--text-dim); font-weight: 700; }
+
+  /* ── Unsupported ── */
+  .unsupported-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+  .dead-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1.5px solid rgba(107,58,125,0.4);
+    border-radius: 6px;
+    padding: 5px 10px;
+    text-decoration: line-through;
+    text-decoration-color: rgba(224,90,58,0.5);
+  }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 64px;
+    text-align: center;
+    padding-top: 28px;
+    border-top: 2px solid var(--border);
+    font-size: 14px;
+    color: var(--text-dim);
+    font-weight: 700;
+  }
+  .footer .brand { color: var(--gold); font-size: 16px; font-weight: 900; }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hero   { animation: fadeUp 0.4s ease both; }
+  .toc    { animation: fadeUp 0.4s 0.1s ease both; }
+  section { animation: fadeUp 0.4s ease both; }
+
+  @media (max-width: 580px) {
+    h1 { font-size: 26px; }
+    .tim-bubble { flex-direction: column; align-items: center; text-align: center; }
+    .tim-bubble::before { display: none; }
+    td, th { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-badge">
+      <span class="sparkle">✦</span> Cards On Tap <span class="sparkle">✦</span>
+    </div>
+    <h1>Tim's Search Guide</h1>
+    <p class="hero-sub">Everything you can throw at Tim the All Knowing — and a few things that'll make him shrug.</p>
+
+    <div class="tim-bubble">
+      <div class="tim-avatar">🧙</div>
+      <div class="tim-text">
+        <strong>Hiya! I'm Tim.</strong> I know literally everything in TAK.db. Type something in the search bar and I'll find it — but learn these tricks and you'll be able to ask me <em>anything</em>.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOC ── -->
+  <div class="toc">
+    <div class="toc-label">Jump to a section</div>
+    <div class="toc-links">
+      <a href="#basics">Basic Search</a>
+      <a href="#filters">Keyword Filters</a>
+      <a href="#colour">Colour &amp; Identity</a>
+      <a href="#stats">Stats &amp; Numbers</a>
+      <a href="#rarity">Rarity</a>
+      <a href="#format">Format &amp; Legality</a>
+      <a href="#set">Set, Date &amp; Artist</a>
+      <a href="#is">is: Flags</a>
+      <a href="#tags">Custom Tags</a>
+      <a href="#logic">Logic &amp; Grouping</a>
+      <a href="#nope">What Tim Can't Do</a>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── BASICS ── -->
+  <section id="basics">
+    <div class="section-header">
+      <div class="section-icon">🔍</div>
+      <h2>Basic Search</h2>
+    </div>
+
+    <p>Just type a word and Tim searches card <strong>names</strong>.</p>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">lightning</span><span class="ex-c">— any card with "lightning" in the name</span></div>
+      <div class="ex-row"><span class="ex-q">bolt</span><span class="ex-c">— anything "bolt"-adjacent</span></div>
+    </div>
+
+    <p>Wrap it in <code>"quotes"</code> and Tim searches both the <strong>name and oracle text</strong> for that exact phrase.</p>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">"draw a card"</span><span class="ex-c">— name or text contains this phrase</span></div>
+      <div class="ex-row"><span class="ex-q">"enters the battlefield"</span><span class="ex-c">— all your ETB triggers</span></div>
+    </div>
+
+    <p>Prefix with <code>!</code> to match an <strong>exact card name</strong> — nothing more, nothing less.</p>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">!Lightning Bolt</span><span class="ex-c">— the OG, not Lightning Strike, not Lightning Helix</span></div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">✨</span>
+      All searches are <strong>case-insensitive</strong>. LIGHTNING, lightning, LiGhTnInG — Tim doesn't judge.
+    </div>
+  </section>
+
+  <!-- ── FILTERS ── -->
+  <section id="filters">
+    <div class="section-header">
+      <div class="section-icon">🏷️</div>
+      <h2>Keyword Filters</h2>
+    </div>
+
+    <p>The good stuff. Use <code>keyword:value</code> to target specific fields. Stack 'em up — Tim ANDs them all together by default.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Filter</th><th>Short form</th><th>What it searches</th></tr></thead>
+        <tbody>
+          <tr><td><code>name:</code></td><td><code>n:</code></td><td>Card name (partial match)</td></tr>
+          <tr><td><code>oracle:</code></td><td><code>o:</code></td><td>Oracle / rules text (partial match)</td></tr>
+          <tr><td><code>type:</code></td><td><code>t:</code></td><td>Full type line — supertypes, types and subtypes</td></tr>
+          <tr><td><code>keyword:</code></td><td><code>kw:</code></td><td>Keyword ability (Flying, Trample, Deathtouch…)</td></tr>
+          <tr><td><code>artist:</code></td><td><code>a:</code></td><td>Artist name (partial match)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">t:goblin t:warrior</span><span class="ex-c">— Goblin Warriors specifically</span></div>
+      <div class="ex-row"><span class="ex-q">o:"whenever a creature dies"</span><span class="ex-c">— death trigger effects</span></div>
+      <div class="ex-row"><span class="ex-q">kw:flying kw:vigilance</span><span class="ex-c">— has BOTH flying AND vigilance</span></div>
+      <div class="ex-row"><span class="ex-q">t:creature -t:human</span><span class="ex-c">— creatures that aren't Human</span></div>
+    </div>
+  </section>
+
+  <!-- ── COLOUR ── -->
+  <section id="colour">
+    <div class="section-header">
+      <div class="section-icon">🎨</div>
+      <h2>Colour &amp; Identity</h2>
+    </div>
+
+    <div class="pip-row">
+      <span class="pip pip-w">W</span>
+      <span class="pip pip-u">U</span>
+      <span class="pip pip-b">B</span>
+      <span class="pip pip-r">R</span>
+      <span class="pip pip-g">G</span>
+      <span class="pip pip-c">C</span>
+    </div>
+
+    <p style="margin-top:14px;"><code>c:</code> filters by a card's actual colours. <code>id:</code> (alias: <code>identity:</code>) filters by colour identity — the Commander-relevant version.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>What you type</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td><code>c:w</code> or <code>c:white</code></td><td>White cards</td></tr>
+          <tr><td><code>c:u</code> or <code>c:blue</code></td><td>Blue cards</td></tr>
+          <tr><td><code>c:b</code> or <code>c:black</code></td><td>Black cards</td></tr>
+          <tr><td><code>c:r</code> or <code>c:red</code></td><td>Red cards</td></tr>
+          <tr><td><code>c:g</code> or <code>c:green</code></td><td>Green cards</td></tr>
+          <tr><td><code>c:m</code></td><td>Multicolour cards (gold)</td></tr>
+          <tr><td><code>c:c</code></td><td>Colourless cards</td></tr>
+          <tr><td><code>c=rg</code> or <code>c:gruul</code></td><td>Exactly Red and Green — no more, no less</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      <strong>: vs = matters!</strong> <code>c:rg</code> means "includes Red or Green". <code>c=rg</code> means "exactly Red and Green (Gruul)".
+    </div>
+
+    <p><strong>Guild, Shard, Wedge &amp; College shortcuts</strong> — Tim knows all the lore:</p>
+
+    <div class="colour-grid">
+      <div class="colour-card">
+        <div class="clabel">🏛️ Guilds (2-colour)</div>
+        <code>azorius</code> <code>dimir</code> <code>rakdos</code> <code>gruul</code> <code>selesnya</code>
+        <code>orzhov</code> <code>izzet</code> <code>golgari</code> <code>boros</code> <code>simic</code>
+      </div>
+      <div class="colour-card">
+        <div class="clabel">⚡ Shards (3-colour)</div>
+        <code>bant</code> <code>esper</code> <code>grixis</code> <code>jund</code> <code>naya</code>
+      </div>
+      <div class="colour-card">
+        <div class="clabel">🔺 Wedges (3-colour)</div>
+        <code>abzan</code> <code>jeskai</code> <code>sultai</code> <code>mardu</code> <code>temur</code>
+      </div>
+      <div class="colour-card">
+        <div class="clabel">🎓 Strixhaven</div>
+        <code>silverquill</code> <code>prismari</code> <code>witherbloom</code> <code>lorehold</code> <code>quandrix</code>
+      </div>
+      <div class="colour-card">
+        <div class="clabel">🌈 Five-colour</div>
+        <code>rainbow</code> <code>fivecolour</code>
+      </div>
+    </div>
+
+    <p><strong>Mana cost</strong> — use <code>mana:</code> or <code>m:</code> with the literal cost string:</p>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">m:{G}{U}</span><span class="ex-c">— costs exactly one Green one Blue</span></div>
+      <div class="ex-row"><span class="ex-q">m:{2}{W}{W}</span><span class="ex-c">— costs 2WW</span></div>
+    </div>
+  </section>
+
+  <!-- ── STATS ── -->
+  <section id="stats">
+    <div class="section-header">
+      <div class="section-icon">⚔️</div>
+      <h2>Stats &amp; Numbers</h2>
+    </div>
+
+    <p>Numeric filters support comparison operators: <code>&gt;</code> <code>&lt;</code> <code>&gt;=</code> <code>&lt;=</code> <code>=</code> <code>!=</code></p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Filter</th><th>Also</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>mv:</code></td><td><code>manavalue:</code> <code>cmc:</code></td><td>Mana value (converted mana cost)</td></tr>
+          <tr><td><code>pow:</code></td><td><code>power:</code></td><td>Power</td></tr>
+          <tr><td><code>tou:</code></td><td><code>toughness:</code></td><td>Toughness</td></tr>
+          <tr><td><code>pt:</code></td><td><code>powtou:</code></td><td>Power + Toughness combined</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">mv&lt;=3 c:u t:instant</span><span class="ex-c">— cheap Blue instants</span></div>
+      <div class="ex-row"><span class="ex-q">pow&gt;=8</span><span class="ex-c">— absolute units</span></div>
+      <div class="ex-row"><span class="ex-q">pow&gt;tou</span><span class="ex-c">— attacks harder than it defends</span></div>
+      <div class="ex-row"><span class="ex-q">mv:even t:creature</span><span class="ex-c">— even-cost creatures (try "odd" too)</span></div>
+      <div class="ex-row"><span class="ex-q">pt&gt;=10 c:g</span><span class="ex-c">— big chunky Green stompers</span></div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">✨</span>
+      <code>mv:even</code> and <code>mv:odd</code> are special values. You can also compare stats against each other: <code>pow&gt;tou</code>, <code>tou&gt;pow</code>, and so on.
+    </div>
+  </section>
+
+  <!-- ── RARITY ── -->
+  <section id="rarity">
+    <div class="section-header">
+      <div class="section-icon">💎</div>
+      <h2>Rarity</h2>
+    </div>
+
+    <p>Use <code>r:</code> or <code>rarity:</code>. Supports comparisons (<code>&gt;</code> <code>&lt;</code> <code>&gt;=</code>) because rarity is ordered: Common &lt; Uncommon &lt; Rare &lt; Mythic.</p>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">r:mythic c:r</span><span class="ex-c">— Red mythics</span></div>
+      <div class="ex-row"><span class="ex-q">r&gt;=rare t:instant</span><span class="ex-c">— Rare or Mythic instants</span></div>
+      <div class="ex-row"><span class="ex-q">r:common t:artifact</span><span class="ex-c">— Common artifacts (Pauper enjoyers, this one's for you)</span></div>
+    </div>
+
+    <p>Shorthand works too: <code>c</code> <code>u</code> <code>r</code> <code>m</code> for Common / Uncommon / Rare / Mythic.</p>
+  </section>
+
+  <!-- ── FORMAT ── -->
+  <section id="format">
+    <div class="section-header">
+      <div class="section-icon">⚖️</div>
+      <h2>Format &amp; Legality</h2>
+    </div>
+
+    <p>Find cards that are legal in a format, or call out the banned/restricted ones.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Filter</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>f:commander</code></td><td>Legal in Commander</td></tr>
+          <tr><td><code>f:modern</code></td><td>Legal in Modern</td></tr>
+          <tr><td><code>banned:legacy</code></td><td>Banned in Legacy</td></tr>
+          <tr><td><code>restricted:vintage</code></td><td>Restricted in Vintage</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Supported formats:</strong></p>
+    <div class="pill-row">
+      <span class="pill">standard</span><span class="pill">pioneer</span><span class="pill">modern</span>
+      <span class="pill">legacy</span><span class="pill">vintage</span><span class="pill">commander</span>
+      <span class="pill">pauper</span><span class="pill">historic</span><span class="pill">timeless</span>
+      <span class="pill">brawl</span><span class="pill">oathbreaker</span><span class="pill">gladiator</span>
+      <span class="pill">alchemy</span><span class="pill">paupercommander</span><span class="pill">premodern</span>
+      <span class="pill">oldschool</span><span class="pill">penny</span><span class="pill">predh</span>
+      <span class="pill">future</span><span class="pill">duel</span>
+    </div>
+  </section>
+
+  <!-- ── SET DATE ARTIST ── -->
+  <section id="set">
+    <div class="section-header">
+      <div class="section-icon">📅</div>
+      <h2>Set, Date &amp; Artist</h2>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Filter</th><th>Also</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>set:</code></td><td><code>s:</code> <code>e:</code></td><td><code>e:war</code> — War of the Spark</td></tr>
+          <tr><td><code>number:</code></td><td><code>cn:</code></td><td><code>cn:1</code> — collector number</td></tr>
+          <tr><td><code>date:</code></td><td>—</td><td><code>date&gt;2020-01-01</code> — released after this date</td></tr>
+          <tr><td><code>year:</code></td><td>—</td><td><code>year&gt;=2023</code> — 2023 onwards</td></tr>
+          <tr><td><code>artist:</code></td><td><code>a:</code></td><td><code>a:avon</code> — partial name match</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">e:war r:mythic</span><span class="ex-c">— War of the Spark mythics</span></div>
+      <div class="ex-row"><span class="ex-q">year&gt;=2023 t:land</span><span class="ex-c">— fresh lands from the last couple years</span></div>
+      <div class="ex-row"><span class="ex-q">a:avon t:land</span><span class="ex-c">— those gorgeous old-school basics</span></div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-icon">✨</span>
+      Dates go in <strong>YYYY-MM-DD</strong> format, or just <strong>YYYY</strong> for a whole year.
+    </div>
+  </section>
+
+  <!-- ── IS: ── -->
+  <section id="is">
+    <div class="section-header">
+      <div class="section-icon">🏷️</div>
+      <h2>is: and not: Flags</h2>
+    </div>
+
+    <p><code>is:X</code> matches cards with a specific property. <code>not:X</code> or <code>-is:X</code> flips it.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Flag</th><th>What it matches</th></tr></thead>
+        <tbody>
+          <tr><td><code>is:foil</code></td><td>Has a foil printing</td></tr>
+          <tr><td><code>is:nonfoil</code></td><td>Has a non-foil printing</td></tr>
+          <tr><td><code>is:etched</code></td><td>Has an etched foil printing</td></tr>
+          <tr><td><code>is:digital</code></td><td>Arena or MTGO only (no physical printing)</td></tr>
+          <tr><td><code>is:permanent</code></td><td>Not an instant or sorcery</td></tr>
+          <tr><td><code>is:spell</code></td><td>Instant or sorcery</td></tr>
+          <tr><td><code>is:historic</code></td><td>Legendary, Artifact, or Saga</td></tr>
+          <tr><td><code>is:vanilla</code></td><td>No oracle text or keywords — just a stat block</td></tr>
+          <tr><td><code>is:commander</code></td><td>Legendary creature (can be your Commander)</td></tr>
+          <tr><td><code>is:brawler</code></td><td>Legendary creature or Planeswalker</td></tr>
+          <tr><td><code>is:multicolor</code></td><td>More than one colour</td></tr>
+          <tr><td><code>is:colorless</code></td><td>No colours at all</td></tr>
+          <tr><td><code>is:reprint</code></td><td>Printed in more than one set</td></tr>
+          <tr><td><code>is:unique</code></td><td>Only ever appeared in one set</td></tr>
+          <tr><td><code>is:fetchland</code></td><td>Fetchland (Arid Mesa, Scalding Tarn etc.)</td></tr>
+          <tr><td><code>is:shockland</code></td><td>Shockland (Stomping Ground etc.)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">is:commander c:g -t:human</span><span class="ex-c">— non-Human Green commanders</span></div>
+      <div class="ex-row"><span class="ex-q">is:vanilla t:creature mv&lt;=2</span><span class="ex-c">— those efficient vanilla beaters</span></div>
+      <div class="ex-row"><span class="ex-q">not:reprint r:rare</span><span class="ex-c">— rares that have never been reprinted</span></div>
+      <div class="ex-row"><span class="ex-q">-is:digital f:modern</span><span class="ex-c">— Modern-legal physical cards</span></div>
+    </div>
+  </section>
+
+  <!-- ── TAGS ── -->
+  <section id="tags">
+    <div class="section-header">
+      <div class="section-icon">🔖</div>
+      <h2>Custom Tags</h2>
+    </div>
+
+    <p>Cards On Tap lets you tag your own cards — and Tim can search those tags directly with <code>tag:</code>.</p>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">tag:ramp c:g</span><span class="ex-c">— your tagged ramp cards that are Green</span></div>
+      <div class="ex-row"><span class="ex-q">tag:bulk -r:common</span><span class="ex-c">— bulk pile stuff that isn't commons</span></div>
+      <div class="ex-row"><span class="ex-q">tag:trade is:reprint</span><span class="ex-c">— trade fodder that's available as reprints</span></div>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      Tag names are case-insensitive. <code>tag:RAMP</code> and <code>tag:ramp</code> find the same cards.
+    </div>
+  </section>
+
+  <!-- ── LOGIC ── -->
+  <section id="logic">
+    <div class="section-header">
+      <div class="section-icon">🧩</div>
+      <h2>Logic &amp; Grouping</h2>
+    </div>
+
+    <p>Multiple filters are ANDed by default. But you've got more tools if you need them:</p>
+
+    <div class="op-grid">
+      <div class="op-card">
+        <code>-filter</code>
+        <div class="desc">Negate — exclude everything matching this</div>
+      </div>
+      <div class="op-card">
+        <code>A OR B</code>
+        <div class="desc">Either condition can match (OR must be caps)</div>
+      </div>
+      <div class="op-card">
+        <code>(group)</code>
+        <div class="desc">Group conditions together</div>
+      </div>
+      <div class="op-card">
+        <code>"phrase"</code>
+        <div class="desc">Exact phrase in name or oracle text</div>
+      </div>
+      <div class="op-card">
+        <code>!Card Name</code>
+        <div class="desc">Exact card name — not partial, exact</div>
+      </div>
+    </div>
+
+    <div class="example-block">
+      <div class="ex-row"><span class="ex-q">(t:goblin OR t:elf) r:rare</span><span class="ex-c">— rare Goblins or Elves</span></div>
+      <div class="ex-row"><span class="ex-q">t:creature (c:r OR c:g) mv&lt;=3</span><span class="ex-c">— cheap Red or Green creatures</span></div>
+      <div class="ex-row"><span class="ex-q">-fire c:r t:instant</span><span class="ex-c">— Red instants that aren't named after fire</span></div>
+      <div class="ex-row"><span class="ex-q">(c:izzet OR c:dimir) -t:creature</span><span class="ex-c">— UR or UB non-creatures</span></div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-icon">⚠️</span>
+      <code>OR</code> must be in <strong>CAPITALS</strong>. Lowercase "or" gets treated as a word to search for. Tim's pretty chill about most things, but this one matters.
+    </div>
+  </section>
+
+  <!-- ── NOPE ── -->
+  <section id="nope">
+    <div class="section-header">
+      <div class="section-icon">🚫</div>
+      <h2>What Tim Can't Do</h2>
+    </div>
+
+    <p>Tim's wise, but TAK.db doesn't have everything. These Scryfall keywords will trigger a warning and be ignored — Tim will still search using whatever else you gave him.</p>
+
+    <div class="unsupported-grid">
+      <span class="dead-chip">ft: / flavor:</span>
+      <span class="dead-chip">usd: / eur: / tix:</span>
+      <span class="dead-chip">wm: / watermark:</span>
+      <span class="dead-chip">cube:</span>
+      <span class="dead-chip">art: / atag:</span>
+      <span class="dead-chip">function: / otag:</span>
+      <span class="dead-chip">border: / frame:</span>
+      <span class="dead-chip">b: / block:</span>
+      <span class="dead-chip">lang:</span>
+      <span class="dead-chip">in:</span>
+      <span class="dead-chip">loy: / loyalty:</span>
+      <span class="dead-chip">order: / direction:</span>
+      <span class="dead-chip">unique: / prefer:</span>
+    </div>
+
+    <div class="callout tip">
+      <span class="callout-icon">💡</span>
+      Tim won't crash on these — he'll show a warning and carry on. Good lad.
+    </div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <div class="footer">
+    <p>
+      <span class="sparkle">✦</span>
+      <span class="brand">Cards On Tap</span>
+      <span class="sparkle">✦</span>
+    </p>
+    <p style="margin-top:10px;">Powered by Tim the All Knowing &nbsp;·&nbsp; Magic: The Gathering card data © Wizards of the Coast &nbsp;·&nbsp; Card images via Scryfall</p>
+  </div>
+
+</div>
+</body>
+</html>

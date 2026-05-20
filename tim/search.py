@@ -832,6 +832,7 @@ def _node_to_sql(node: AstNode) -> tuple[Optional[str], list, list]:
 def build_search_query(
     user_input: str,
     include_extras: bool = False,
+    include_arena: bool = False,
 ) -> tuple[str, list, list]:
     """
     Build a complete SQL SELECT from a Scryfall-style search string.
@@ -842,6 +843,7 @@ def build_search_query(
             (Vanguard, Plane but not Planeswalker, Scheme, Phenomenon, Token,
             Emblem, and cards from memorabilia sets — set_type is read from
             c.raw_scryfall_json because printings has no set_type column).
+        include_arena: If False, exclude digital-only (MTG Arena) cards.
 
     Returns:
         (sql, params, warnings)
@@ -873,6 +875,9 @@ def build_search_query(
                 "NOT (LOWER(IFNULL(json_extract(c.raw_scryfall_json, '$.set_type'), '')) = 'memorabilia')",
             ]
         )
+
+    if not include_arena:
+        conditions.append('(c.digital IS NULL OR c.digital = 0)')
 
     # ── User query ────────────────────────────────────────────
     if user_input and user_input.strip():

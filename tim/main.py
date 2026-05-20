@@ -62,6 +62,10 @@ def search_cards(
         default=False,
         description="Include extras (Vanguard, Plane, Scheme, Phenomenon, Tokens, Emblems, Memorabilia sets)",
     ),
+    include_arena:   bool = Query(
+        default=False,
+        description="Include MTG Arena/digital-only cards",
+    ),
     page:            int  = Query(default=0, ge=0),
     page_size:       int  = Query(default=60, ge=1, le=200),
 ):
@@ -69,7 +73,11 @@ def search_cards(
     Search cards using Scryfall-style syntax.
     Returns a paginated list of cards with their best printing image.
     """
-    sql, params, warnings = build_search_query(q, include_extras=include_extras)
+    sql, params, warnings = build_search_query(
+        q,
+        include_extras=include_extras,
+        include_arena=include_arena,
+    )
 
     conn = get_db()
     try:
